@@ -7,13 +7,62 @@ const statusClasses = {
   pending: 'candidate-pending',
   none: '',
 };
-
+ // Bu fonksiyonu global olarak erişilebilir yap
+  
 export default function Candidates() {
   const [candidates, setCandidates] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    window.sortCandidatesByGPA = sortByGPA;
+    return () => {
+      delete window.sortCandidatesByGPA;
+    };
+  }, []);
+  // GPA'ya göre sıralama fonksiyonu
+  function sortByGPA() {
+    setCandidates(prev =>
+      [...prev].sort((a, b) => b.gpa - a.gpa)
+    );
+  }
+  // ...component içinde...
+function sortByEnglishLevel() {
+  // Sıralama için seviyeleri belirle
+  const levels = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
+  setCandidates(prev =>
+    [...prev].sort(
+      (a, b) =>
+        levels.indexOf((b.englishLevel || '').toLowerCase()) -
+        levels.indexOf((a.englishLevel || '').toLowerCase())
+    )
+  );
+}
 
+useEffect(() => {
+  window.sortCandidatesByEnglishLevel = sortByEnglishLevel;
+  return () => {
+    delete window.sortCandidatesByEnglishLevel;
+  };
+}, []);
+function sortByEducationalStatus() {
+  // Sıralama için seviyeleri belirle (örnek: graduated > senior > junior > sophomore > freshman)
+  const order = ['graduated', 'senior', 'junior', 'sophomore', 'freshman'];
+  setCandidates(prev =>
+    [...prev].sort(
+      (a, b) =>
+        order.indexOf((a.currentYear || '').toLowerCase()) -
+        order.indexOf((b.currentYear || '').toLowerCase())
+    )
+  );
+}
+
+useEffect(() => {
+  window.sortCandidatesByEducationalStatus = sortByEducationalStatus;
+  return () => {
+    delete window.sortCandidatesByEducationalStatus;
+  };
+}, []);
   useEffect(() => {
     fetch('http://127.0.0.1:8080/userside/get/candidates')
       .then(response => {
@@ -89,7 +138,16 @@ export default function Candidates() {
   if (error) {
     return <div className="error">Error: {error}</div>;
   }
-
+  function calculateAge(birthday) {
+    const birth = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  }
   return (
     <div className="candidates-container">
       {candidates.length === 0 ? (
@@ -102,39 +160,21 @@ export default function Candidates() {
           >
             <div className="candidate-info">
               <p>
-                <strong>Name:</strong> {candidate.name} {candidate.surname}
+                <strong></strong> {candidate.name} {candidate.surname} {candidate.birthday ? calculateAge(candidate.birthday) : '-'}
               </p>
-              <p>
-                <strong>Graduation Year:</strong>{' '}
-                {candidate.expectedGraduateYear}
-              </p>
-              <p>
-                <strong>Birthday:</strong> {candidate.birthday}
-              </p>
-              <p>
-                <strong>Email:</strong> {candidate.email}
-              </p>
-              <p>
-                <strong>Sex:</strong> {candidate.sex}
-              </p>
-              <p>
-                <strong>Phone:</strong> {candidate.phone}
-              </p>
+
+
               <p>
                 <strong>University ID:</strong> {candidate.universityId}
               </p>
               <p>
                 <strong>Major ID:</strong> {candidate.majorId}
               </p>
-              <p>
-                <strong>GPA:</strong> {candidate.gpa}
-              </p>
+
               <p>
                 <strong>Class Year:</strong> {candidate.currentYear}
               </p>
-              <p>
-                <strong>English Level:</strong> {candidate.englishLevel}
-              </p>
+
             </div>
             <button
               className="detail-btn"
